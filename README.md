@@ -6,20 +6,30 @@ Project model and deterministic tooling primitives for Durin applications.
 
 ## What this package owns
 
-- Project discovery and path resolution
-- `durin.yaml` manifest model, parser, writer helpers
+- Project discovery and path resolution (runtime-neutral project model)
+- `ProjectOptions`, `RuntimeIntent`, `ResolvedRuntime`, `DurinManifest`
+- `durin.yaml` manifest parsing, serialization, and legacy manifest normalization
 - Scaffold plan model and safe filesystem mutation (`ScaffoldWriter`)
-- Preset contracts (`Preset`, `PresetRegistry`, `ProjectOptions`)
+- Preset contracts (`Preset`, `PresetRegistry`) — not the preset catalog
 - Minimal console output abstractions used by mutation
 
 ## What this package does not own
 
+- Runtime resolution, runtime registry, or runtime provisioning
+- Eregion installation/configuration, preset resolution, broker execution, process supervision
 - Concrete architecture presets or templates
 - Architecture detection, drift, adopt/evolve/migrate planning
-- Durin Forge CLI commands
+- Durin Forge CLI commands (Forge owns `RuntimeResolver` and applies `ResolvedRuntime` to the manifest)
 - Terminal rendering / UX
-- Runtime resolution, binary install, or Eregion/Mithril integration
 - Doctor, status, graph, optimize, serve/dev orchestration
+
+## Runtime flow (Forge + Core)
+
+```text
+Preset → RuntimeIntent → manifest (unresolved) → Forge RuntimeResolver → ResolvedRuntime → Core serializes final manifest
+```
+
+Core never chooses engine, execution, or supervisor. See `docs/durin-core-runtime-model-spec.md` (status: **implemented**).
 
 ## Installation
 
@@ -82,9 +92,13 @@ Stable surface for consumers:
 
 `ProjectOptions` carries an optional `RuntimeIntent` (mode + capabilities). `DurinManifest` stores either unresolved runtime (`state: unresolved`) or a `ResolvedRuntime` (mode, engine, execution, optional supervisor). Core never chooses a concrete runner.
 
+`isJobMode()` uses `runtime.mode === 'job'` when runtime is resolved; it never inspects preset IDs. Unresolved manifests may use a features-based heuristic only until Forge resolves runtime.
+
+The `engine` field is an opaque string (often `mithril` today); Core does not assume a specific engine.
+
 ## Versioning status
 
-Initial extraction release: **0.1.0** (pre-1.0; APIs may still evolve with Durin Forge integration).
+**0.2.0+** — runtime-neutral manifest model (`RuntimeIntent`, `ResolvedRuntime`, unresolved state, legacy `server:` normalization). **0.1.0** was the initial extraction release.
 
 ## Relationship to Durin Forge
 
