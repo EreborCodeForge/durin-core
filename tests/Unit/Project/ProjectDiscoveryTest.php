@@ -50,6 +50,8 @@ YAML);
 
         $this->assertTrue($project->hasManifest());
         $this->assertSame('demo', $project->manifest?->applicationName);
+        $this->assertFalse($project->manifest?->isResolved() ?? true);
+        $this->assertNull($project->manifest?->runtime);
     }
 
     public function test_fails_when_no_project_markers(): void

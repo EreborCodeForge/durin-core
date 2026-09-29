@@ -18,7 +18,7 @@ Project model and deterministic tooling primitives for Durin applications.
 - Architecture detection, drift, adopt/evolve/migrate planning
 - Durin Forge CLI commands
 - Terminal rendering / UX
-- MithrilPHP or Eregion runtime integration
+- Runtime resolution, binary install, or Eregion/Mithril integration
 - Doctor, status, graph, optimize, serve/dev orchestration
 
 ## Installation
@@ -76,8 +76,11 @@ Stable surface for consumers:
 
 - `Project`, `ProjectDiscovery`, `ProjectPaths`
 - `DurinManifest`, `DurinManifestParser`
+- `Runtime\RuntimeIntent`, `Runtime\ResolvedRuntime`
 - `ScaffoldPlan`, `ScaffoldAction`, `ScaffoldWriter`, `ScaffoldWriteResult`
 - `Contract\Preset`, `Contract\ProjectOptions`, `Contract\PresetRegistry`
+
+`ProjectOptions` carries an optional `RuntimeIntent` (mode + capabilities). `DurinManifest` stores either unresolved runtime (`state: unresolved`) or a `ResolvedRuntime` (mode, engine, execution, optional supervisor). Core never chooses a concrete runner.
 
 ## Versioning status
 

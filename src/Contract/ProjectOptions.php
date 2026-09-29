@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace EreborCodeForge\Durin\Core\Contract;
 
+use EreborCodeForge\Durin\Core\Runtime\RuntimeIntent;
+
 /**
  * Options passed to a preset when building a ScaffoldPlan.
+ * Runtime intent is optional and neutral — no concrete engine/server defaults.
  */
 final readonly class ProjectOptions
 {
@@ -16,10 +19,8 @@ final readonly class ProjectOptions
         public string $name,
         public string $preset,
         public string $targetDirectory,
-        public string $runtimeEngine = 'mithril',
-        public string $runtimeServer = 'eregion',
-        public string $runtimeMode = 'http',
-        public bool $http = true,
+        public ?RuntimeIntent $runtime = null,
+        public bool $http = false,
         public bool $messaging = false,
         public bool $modules = false,
         public array $extra = [],
