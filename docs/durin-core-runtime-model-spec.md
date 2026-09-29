@@ -1,7 +1,8 @@
 # Durin Core — Runtime-Neutral Manifest & Project Model
 
 **Status:** DONE / implemented (`ereborcodeforge/durin-core` v0.2.0+)  
-**Repository:** `EreborCodeForge/durin-core`
+**Repository:** `EreborCodeForge/durin-core`  
+**Integração transversal:** [`durin-architecture` — workloads master spec](https://github.com/EreborCodeForge/durin-architecture/blob/main/docs/specs/durin-workloads-integration-master-spec.md)
 
 # Mission
 
