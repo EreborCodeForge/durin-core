@@ -24,5 +24,6 @@ final readonly class ProjectOptions
         public bool $messaging = false,
         public bool $modules = false,
         public array $extra = [],
+        public ?ProjectSelection $selection = null,
     ) {}
 }

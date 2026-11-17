@@ -12,16 +12,30 @@ use EreborCodeForge\Durin\Core\Runtime\ResolvedRuntime;
 final readonly class DurinManifest
 {
     /**
-     * @param array{http: bool, messaging: bool} $features
+     * @param array{http: bool, messaging: bool, consumer: bool, producer: bool} $features
      * @param array{modules: bool} $architecture
+     */
+    public array $features;
+
+    /** @var array{modules: bool} */
+    public array $architecture;
+
+    /**
+     * @param array<string, mixed> $features
+     * @param array<string, mixed> $architecture
      */
     public function __construct(
         public string $applicationName,
         public string $preset,
-        public array $features,
-        public array $architecture,
+        array $features,
+        array $architecture,
         public ?ResolvedRuntime $runtime = null,
-    ) {}
+    ) {
+        $this->features = self::featureMap($features);
+        $this->architecture = [
+            'modules' => (bool) ($architecture['modules'] ?? false),
+        ];
+    }
 
     public function isResolved(): bool
     {
@@ -68,18 +82,35 @@ final readonly class DurinManifest
             throw new DurinManifestException('architecture must be a mapping.');
         }
 
+        if ($features !== [] && array_is_list($features)) {
+            throw new DurinManifestException('features must be a mapping.');
+        }
+
         return new self(
             applicationName: $name,
             preset: $preset,
-            features: [
-                'http' => (bool) ($features['http'] ?? false),
-                'messaging' => (bool) ($features['messaging'] ?? false),
-            ],
+            features: self::featureMap($features),
             architecture: [
                 'modules' => (bool) ($architecture['modules'] ?? false),
             ],
             runtime: self::parseRuntime(is_array($runtime) ? $runtime : []),
         );
+    }
+
+    /**
+     * Absent consumer/producer keys are false. Callers do not need to rewrite a legacy file to read them.
+     *
+     * @param array<string, mixed> $features
+     * @return array{http: bool, messaging: bool, consumer: bool, producer: bool}
+     */
+    public static function featureMap(array $features): array
+    {
+        return [
+            'http' => (bool) ($features['http'] ?? false),
+            'messaging' => (bool) ($features['messaging'] ?? false),
+            'consumer' => (bool) ($features['consumer'] ?? false),
+            'producer' => (bool) ($features['producer'] ?? false),
+        ];
     }
 
     /**
@@ -177,7 +208,7 @@ final readonly class DurinManifest
      * @return array{
      *   application: array{name: string, preset: string},
      *   runtime: array{state: string}|array{mode: string, engine: string, execution: string, supervisor?: string},
-     *   features: array{http: bool, messaging: bool},
+     *   features: array{http: bool, messaging: bool, consumer: bool, producer: bool},
      *   architecture: array{modules: bool}
      * }
      */

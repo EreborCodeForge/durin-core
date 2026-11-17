@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace EreborCodeForge\Durin\Core\Tests\Unit\Project;
 
+use EreborCodeForge\Durin\Core\Contract\ProjectOptions;
+use EreborCodeForge\Durin\Core\Contract\ProjectSelection;
 use EreborCodeForge\Durin\Core\Manifest\DurinManifest;
 use EreborCodeForge\Durin\Core\Manifest\DurinManifestException;
 use EreborCodeForge\Durin\Core\Manifest\DurinManifestParser;
@@ -290,5 +292,123 @@ runtime:
   mode: http
   engine: mithril
 YAML);
+    }
+
+    public function test_legacy_manifest_defaults_consumer_and_producer_to_false(): void
+    {
+        $yaml = <<<'YAML'
+application:
+  name: billing
+  preset: service
+runtime:
+  mode: http
+  engine: mithril
+  execution: mithril-http
+  supervisor: eregion
+features:
+  http: true
+  messaging: false
+architecture:
+  modules: false
+YAML;
+
+        $manifest = (new DurinManifestParser())->parse($yaml);
+
+        $this->assertFalse($manifest->features['consumer']);
+        $this->assertFalse($manifest->features['producer']);
+        $this->assertTrue($manifest->features['http']);
+        $this->assertFalse($manifest->features['messaging']);
+        $this->assertSame('billing', $manifest->applicationName);
+        $this->assertSame('eregion', $manifest->runtime?->supervisor);
+    }
+
+    public function test_feature_flags_round_trip(): void
+    {
+        $original = new DurinManifest(
+            applicationName: 'mail-consumer',
+            preset: 'consumer',
+            features: [
+                'http' => false,
+                'messaging' => true,
+                'consumer' => true,
+                'producer' => false,
+            ],
+            architecture: ['modules' => false],
+            runtime: new ResolvedRuntime(
+                mode: 'job',
+                engine: 'mithril',
+                execution: 'mithril-job',
+                supervisor: 'eregion',
+            ),
+        );
+
+        $parsed = (new DurinManifestParser())->parse($original->toYaml());
+        $again = (new DurinManifestParser())->parse($parsed->toYaml());
+
+        $this->assertSame($original->toArray(), $parsed->toArray());
+        $this->assertSame($parsed->toArray(), $again->toArray());
+        $this->assertTrue($parsed->features['consumer']);
+        $this->assertFalse($parsed->features['producer']);
+        $this->assertStringContainsString('consumer: true', $original->toYaml());
+        $this->assertStringContainsString('producer: false', $original->toYaml());
+        $this->assertStringNotContainsString('supervisor: none', $original->toYaml());
+    }
+
+    public function test_legacy_server_keeps_new_feature_flags(): void
+    {
+        $manifest = (new DurinManifestParser())->parse(<<<'YAML'
+application:
+  name: notifications
+  preset: worker
+runtime:
+  engine: mithril
+  server: none
+  mode: job
+features:
+  http: false
+  messaging: true
+  consumer: true
+  producer: true
+architecture:
+  modules: false
+YAML);
+
+        $this->assertNull($manifest->runtime?->supervisor);
+        $this->assertSame('mithril-job', $manifest->runtime?->execution);
+        $this->assertTrue($manifest->features['consumer']);
+        $this->assertTrue($manifest->features['producer']);
+
+        $yaml = $manifest->toYaml();
+        $this->assertStringNotContainsString('server:', $yaml);
+        $roundTrip = (new DurinManifestParser())->parse($yaml);
+        $this->assertTrue($roundTrip->features['consumer']);
+        $this->assertTrue($roundTrip->features['producer']);
+    }
+
+    public function test_rejects_feature_list(): void
+    {
+        $this->expectException(DurinManifestException::class);
+        $this->expectExceptionMessage('features must be a mapping.');
+
+        DurinManifest::fromArray([
+            'application' => ['name' => 'api', 'preset' => 'worker'],
+            'features' => ['consumer', 'producer'],
+        ]);
+    }
+
+    public function test_project_options_selection_is_optional(): void
+    {
+        $legacy = new ProjectOptions('billing', 'service', '/tmp/billing');
+        $this->assertNull($legacy->selection);
+        $this->assertFalse($legacy->http);
+
+        $selected = new ProjectOptions(
+            name: 'mail',
+            preset: 'consumer',
+            targetDirectory: '/tmp/mail',
+            selection: new ProjectSelection('consumer', ['consumer'], 'eregion', 'resources', 1, 4, 'io', 128),
+        );
+        $this->assertSame('eregion', $selected->selection?->supervisorChoice);
+        $this->assertSame(4, $selected->selection?->workersMax);
     }
 }
