@@ -3,7 +3,6 @@
     "description": "Project model and deterministic tooling primitives for Durin.",
     "type": "library",
     "license": "MIT",
-    "version": "0.2.0",
     "authors": [
         {
             "name": "Thales Ruppenthal",
